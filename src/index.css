@@ -1,0 +1,353 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+  --transition-timing-function-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-duration-snappy: 250ms;
+}
+
+/* Base style resets */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #07111F;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* Animations */
+@keyframes slideDown {
+  0% { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideIn {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Leaflet Overrides */
+.leaflet-container {
+  background: #07111F !important;
+  touch-action: none !important;
+}
+
+/* Custom glowy popup style */
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+  background: rgba(8, 18, 31, 0.95) !important;
+  border: 1px solid rgba(165, 180, 200, 0.2) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  color: #F7FAFF !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: normal !important;
+  width: auto !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+  background: rgba(8, 18, 31, 0.95) !important;
+  border-left: 1px solid rgba(165, 180, 200, 0.2) !important;
+  border-bottom: 1px solid rgba(165, 180, 200, 0.2) !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-close-button {
+  color: #9BABBD !important;
+  padding: 8px 10px 0 0 !important;
+}
+
+.custom-leaflet-popup .leaflet-popup-close-button:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* Tooltips */
+.custom-wind-circle-tooltip {
+  background: rgba(8, 18, 31, 0.95) !important;
+  border: 1px solid rgba(165, 180, 200, 0.2) !important;
+  color: #F7FAFF !important;
+  font-family: monospace !important;
+  font-size: 10px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+
+.custom-wind-circle-tooltip::before {
+  border-right-color: rgba(8, 18, 31, 0.95) !important;
+}
+
+/* Scrollbars */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(30, 156, 255, 0.35);
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 156, 255, 0.55);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Leaflet core icon resets */
+.leaflet-typhoon-center-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Snappy non-linear transitions & animations */
+.transition-snappy {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-duration: 250ms !important;
+}
+
+.transition-snappy-slow {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-duration: 450ms !important;
+}
+
+/* Slide in/out transitions */
+@keyframes slideInRightSnappy {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeftSnappy {
+  0% { transform: translateX(-100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInUpSnappy {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleUpSnappy {
+  0% { transform: scale(0.96) translateY(5px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes fadeInSnappy {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slideInRightSnappy 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeftSnappy 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUpSnappy 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUpSnappy 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeInSnappy 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+/* Root color scheme enforcement across different browser environments */
+:root {
+  color-scheme: dark;
+}
+
+html.theme-light, body.theme-light, .theme-light {
+  color-scheme: light;
+}
+
+/* Base form controls consistency across all platforms/browsers */
+select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+.theme-light select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* Theme: Professional Dark Zinc */
+.theme-professional {
+  --bg-color: #121214;
+  --panel-bg: rgba(24, 24, 27, 0.92);
+  --panel-border: rgba(63, 63, 70, 0.6);
+  --accent-color: #38bdf8;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+}
+.theme-professional #simulation-timeline, .theme-professional .control-drawer, .theme-professional .glass-panel {
+  background: var(--panel-bg) !important;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-color: var(--panel-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+.theme-professional .text-[#1E9CFF] {
+  color: var(--accent-color) !important;
+}
+.theme-professional .bg-[#1E9CFF] {
+  background-color: var(--accent-color) !important;
+}
+.theme-professional .bg-slate-900 {
+  background-color: #18181b !important;
+}
+
+/* Theme: iOS Liquid Glass */
+.theme-ios {
+  --bg-color: #000000;
+  --panel-bg: rgba(20, 20, 24, 0.6);
+  --panel-border: rgba(255, 255, 255, 0.2);
+  --accent-color: #0A84FF;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(235, 235, 245, 0.6);
+  --ios-blur: blur(48px) saturate(220%) brightness(110%);
+}
+.theme-ios #simulation-timeline, 
+.theme-ios .control-drawer, 
+.theme-ios .glass-panel,
+.theme-ios .bg-slate-900,
+.theme-ios .bg-slate-800,
+.theme-ios .bg-\[\#08121f\]\/94,
+.theme-ios .bg-slate-950\/40,
+.theme-ios .bg-slate-950\/20,
+.theme-ios .bg-slate-950\/90,
+.theme-ios .bg-slate-900\/60,
+.theme-ios .bg-slate-900\/80 {
+  background: var(--panel-bg) !important;
+  backdrop-filter: var(--ios-blur) !important;
+  -webkit-backdrop-filter: var(--ios-blur) !important;
+  border: 1px solid var(--panel-border) !important;
+  box-shadow: 0 15px 45px -10px rgba(0,0,0,0.6), inset 0 2px 2px rgba(255, 255, 255, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px !important;
+}
+
+.theme-ios .text-[#1E9CFF],
+.theme-ios .text-sky-500,
+.theme-ios .text-blue-500,
+.theme-ios .text-cyan-500 {
+  color: var(--accent-color) !important;
+}
+
+.theme-ios .bg-[#1E9CFF],
+.theme-ios .bg-sky-500,
+.theme-ios .bg-blue-500,
+.theme-ios .bg-cyan-500 {
+  background-color: var(--accent-color) !important;
+}
+.theme-ios button {
+  border-radius: 12px !important;
+}
+.theme-ios .text-white, .theme-ios .text-slate-200 {
+  color: var(--text-primary) !important;
+}
+.theme-ios .text-slate-400, .theme-ios .text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+
+/* Theme: High-Aesthetic Light (高雅浅色) */
+.theme-light {
+  --bg-color: #f8fafc;
+  --panel-bg: rgba(255, 255, 255, 0.92);
+  --panel-border: rgba(203, 213, 225, 0.85);
+  --accent-color: #0284c7;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+}
+
+.theme-light #simulation-timeline, 
+.theme-light .control-drawer, 
+.theme-light .glass-panel,
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-800,
+.theme-light .bg-\[\#08121f\]\/94,
+.theme-light .bg-slate-950\/40,
+.theme-light .bg-slate-950\/20,
+.theme-light .bg-slate-950\/90,
+.theme-light .bg-slate-900\/60,
+.theme-light .bg-slate-900\/80,
+.theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-950 {
+  background: var(--panel-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--panel-border) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-slate-300,
+.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light .text-slate-400,
+.theme-light .text-slate-500 {
+  color: #475569 !important;
+}
+
+.theme-light .border-slate-800,
+.theme-light .border-slate-700,
+.theme-light .border-slate-600 {
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light select,
+.theme-light input[type="text"],
+.theme-light input[type="number"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light button.bg-slate-800,
+.theme-light button.bg-slate-900,
+.theme-light button.bg-slate-950,
+.theme-light button.bg-slate-900\/80 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.theme-light button.bg-slate-800:hover,
+.theme-light button.bg-slate-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.theme-light .leaflet-container {
+  background: #f1f5f9 !important;
+}

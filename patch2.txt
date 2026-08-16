@@ -1,0 +1,15 @@
+         // Non-linear decay scaling: stronger typhoons weaken much faster, especially at super high intensities
+         let intensityFactor = 0.5 + 0.75 * Math.pow(ty.vmax / 30.0, 0.9);
+         if (ty.vmax <= 17.1) {
+            // 8级及以下减弱速度小幅放缓
+            intensityFactor = 0.4 + 0.4 * (ty.vmax / 17.1);
+         } else if (ty.vmax >= 41.5) { // 强台风及以上
+            const excessIntensity = ty.vmax - 41.5;
+            intensityFactor += 0.8 * Math.pow(excessIntensity / 10.0, 1.5) + 0.5;
+         }
+         // 深入内陆水汽供应不足后减弱速度加快
+         const deepInlandFactor = 1.0 + Math.min(2.0, landHours / 12.0);
+
+         // Slightly weakened terrain elevation impact
+         const elevationFactor = Math.pow(maxElevation / 750.0, 0.95);
+         const baseLandDecay = (2.0 + elevationFactor * 2.0) * intensityFactor * deepInlandFactor; // Mountainous terrain storm decay

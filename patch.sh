@@ -1,0 +1,27 @@
+sed -i '752,826c\
+// Centralized highly precise resolver for refined landfall naming in the Northwest Pacific\
+export function getDetailedLandName(lat: number, lon: number, country: string, admin: string): string {\
+  const normCountry = country ? country.trim() : "";\
+  const normAdmin = admin ? admin.trim() : "";\
+\
+  // Priority to recognized country names\
+  if (normCountry === "中国" || normCountry === "中国台湾" || normCountry === "中国香港" || normCountry === "中国澳门") {\
+    return getClosestCity(lat, lon, "中国");\
+  }\
+  if (normCountry === "日本") return getClosestCity(lat, lon, "日本");\
+  if (normCountry === "菲律宾") return getClosestCity(lat, lon, "菲律宾");\
+  if (normCountry === "韩国" || normCountry === "朝鲜") return getClosestCity(lat, lon, "韩国");\
+  if (normCountry === "越南") return getClosestCity(lat, lon, "越南");\
+\
+  // Geographic bounding boxes as fallback for unmapped areas\
+  if (lon >= 116.0 && lon <= 127.0 && lat >= 4.5 && lat <= 21.5) return getClosestCity(lat, lon, "菲律宾");\
+  if ((lon >= 107.5 && lon <= 126.0 && lat >= 21.5 && lat <= 42.0) || (lon >= 107.5 && lon <= 116.0 && lat >= 18.0 && lat <= 21.5)) return getClosestCity(lat, lon, "中国");\
+  if (lon >= 122.5 && lon <= 146.0 && lat >= 24.0 && lat <= 46.0) return getClosestCity(lat, lon, "日本");\
+  if (lon >= 124.5 && lon <= 131.0 && lat >= 33.0 && lat <= 43.0) return getClosestCity(lat, lon, "韩国");\
+  if (lon >= 102.0 && lon <= 110.0 && lat >= 8.0 && lat <= 23.0) return getClosestCity(lat, lon, "越南");\
+\
+  if (normAdmin && normAdmin !== normCountry) {\
+    return `${normCountry}${normAdmin}`;\
+  }\
+  return normCountry || "陆地区域";\
+}' src/simulation/Engine.ts

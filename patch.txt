@@ -1,0 +1,22 @@
+    if (metrics.isLand) {
+      forecastLandHours += stepSizeHours;
+      // Landfall weakening with high-intensity non-linear decay speed/rate
+      const elevationFactor = metrics.elevation / 1000.0;
+      let intensityFactor = 0.4 + 0.6 * Math.pow(currentVmax / 30.0, 0.8);
+      if (currentVmax >= 41.5) {
+        const excessIntensity = currentVmax - 41.5;
+        intensityFactor += 0.8 * Math.pow(excessIntensity / 10.0, 1.5) + 0.5;
+      }
+      const deepInlandFactor = 1.0 + Math.min(2.0, forecastLandHours / 12.0);
+      let landDecayRate = (1.8 + elevationFactor * 1.8) * intensityFactor * deepInlandFactor;
+        
+      // Apply user configurable slider multiplier
+      const landfallAdjustmentFactor = Math.max(0.01, 1.0 + (config.landfallDecayAdjustment ?? 0.0));
+      landDecayRate *= landfallAdjustmentFactor;
+
+      if (config.landDecayEnabled) {
+        vmaxDeltaPerHour = -landDecayRate;
+      }
+      forecastUpwellingHours = 0;
+    } else {
+      forecastLandHours = 0;

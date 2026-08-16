@@ -1,0 +1,8 @@
+{
+  "name": "台风模拟器（正式版）",
+  "description": "基于 React + Leaflet + Canvas 的西北太平洋台风数值移动与强度变化交互式模拟系统，支持多图层叠加、风场粒子渲染、环境系统及海洋反馈调节。",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

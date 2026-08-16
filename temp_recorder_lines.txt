@@ -1,0 +1,211 @@
+   880	
+   881	  // Check supported mime types for MediaRecorder prioritizing MP4 format
+   882	  const candidateMimeTypes = [
+   883	    "video/mp4;codecs=avc1.42E01E",
+   884	    "video/mp4;codecs=avc1",
+   885	    "video/mp4;codecs=h264",
+   886	    "video/mp4",
+   887	    "video/webm;codecs=vp9",
+   888	    "video/webm;codecs=vp8",
+   889	    "video/webm"
+   890	  ];
+   891	
+   892	  let chosenMimeType = candidateMimeTypes.find((t) => MediaRecorder.isTypeSupported(t)) || "";
+   893	
+   894	  let bitRate = 12000000; // 12 Mbps for 1080p
+   895	  if (exportConfig.videoResolution === "720p") bitRate = 6000000;
+   896	  else if (exportConfig.videoResolution === "4K") bitRate = 28000000; // 28 Mbps for 4K
+   897	
+   898	  // Use 30 fps capture stream to ensure MediaRecorder records exact 30 FPS frame timestamps
+   899	  const stream = canvas.captureStream(fps);
+   900	  let recorder: MediaRecorder;
+   901	
+   902	  try {
+   903	    recorder = new MediaRecorder(stream, {
+   904	      mimeType: chosenMimeType || undefined,
+   905	      videoBitsPerSecond: bitRate
+   906	    });
+   907	  } catch {
+   908	    try {
+   909	      recorder = new MediaRecorder(stream, { videoBitsPerSecond: bitRate });
+   910	    } catch {
+   911	      recorder = new MediaRecorder(stream);
+   912	    }
+   913	  }
+   914	
+   915	  const actualMimeType = recorder.mimeType || chosenMimeType || "video/mp4";
+   916	  const isMp4 = actualMimeType.includes("mp4") || actualMimeType.includes("avc1") || actualMimeType.includes("h264");
+   917	  const blobType = isMp4 ? "video/mp4" : "video/webm";
+   918	
+   919	  const chunks: Blob[] = [];
+   920	  recorder.ondataavailable = (e) => {
+   921	    if (e.data && e.data.size > 0) chunks.push(e.data);
+   922	  };
+   923	
+   924	  // Helper to fix MP4 container duration header so mobile photo albums and media players display exact duration
+   925	  const fixMp4Duration = async (blob: Blob, durationSec: number): Promise<Blob> => {
+   926	    try {
+   927	      const buffer = await blob.arrayBuffer();
+   928	      const bytes = new Uint8Array(buffer);
+   929	      const view = new DataView(buffer);
+   930	
+   931	      for (let i = 0; i < bytes.length - 32; i++) {
+   932	        // Search for 'mvhd' box (Movie Header Box)
+   933	        if (bytes[i] === 0x6d && bytes[i+1] === 0x76 && bytes[i+2] === 0x68 && bytes[i+3] === 0x64) {
+   934	          const version = bytes[i + 4];
+   935	          if (version === 0) {
+   936	            const timescale = view.getUint32(i + 16, false);
+   937	            if (timescale > 0) {
+   938	              view.setUint32(i + 20, Math.round(durationSec * timescale), false);
+   939	            }
+   940	          } else if (version === 1) {
+   941	            const timescale = view.getUint32(i + 24, false);
+   942	            if (timescale > 0) {
+   943	              const targetDur = BigInt(Math.round(durationSec * timescale));
+   944	              view.setBigUint64(i + 28, targetDur, false);
+   945	            }
+   946	          }
+   947	        }
+   948	        // Search for 'mdhd' box (Media Header Box)
+   949	        if (bytes[i] === 0x6d && bytes[i+1] === 0x64 && bytes[i+2] === 0x68 && bytes[i+3] === 0x64) {
+   950	          const version = bytes[i + 4];
+   951	          if (version === 0) {
+   952	            const timescale = view.getUint32(i + 16, false);
+   953	            if (timescale > 0) {
+   954	              view.setUint32(i + 20, Math.round(durationSec * timescale), false);
+   955	            }
+   956	          } else if (version === 1) {
+   957	            const timescale = view.getUint32(i + 24, false);
+   958	            if (timescale > 0) {
+   959	              const targetDur = BigInt(Math.round(durationSec * timescale));
+   960	              view.setBigUint64(i + 28, targetDur, false);
+   961	            }
+   962	          }
+   963	        }
+   964	        // Search for 'tkhd' box (Track Header Box)
+   965	        if (bytes[i] === 0x74 && bytes[i+1] === 0x6b && bytes[i+2] === 0x68 && bytes[i+3] === 0x64) {
+   966	          const version = bytes[i + 4];
+   967	          if (version === 0) {
+   968	            view.setUint32(i + 24, Math.round(durationSec * 1000), false);
+   969	          } else if (version === 1) {
+   970	            view.setBigUint64(i + 32, BigInt(Math.round(durationSec * 1000)), false);
+   971	          }
+   972	        }
+   973	      }
+   974	      return new Blob([buffer], { type: blob.type });
+   975	    } catch (e) {
+   976	      console.warn("Could not patch MP4 duration header:", e);
+   977	      return blob;
+   978	    }
+   979	  };
+   980	
+   981	  // Helper to fix WebM duration header so media players display exact duration
+   982	  const fixWebmDuration = async (blob: Blob, durationMs: number): Promise<Blob> => {
+   983	    try {
+   984	      const buffer = await blob.arrayBuffer();
+   985	      const bytes = new Uint8Array(buffer);
+   986	      
+   987	      // Search for Segment Info ID: 0x15, 0x49, 0xA9, 0x66
+   988	      for (let i = 0; i < bytes.length - 16; i++) {
+   989	        if (bytes[i] === 0x15 && bytes[i+1] === 0x49 && bytes[i+2] === 0xa9 && bytes[i+3] === 0x66) {
+   990	          let foundDuration = false;
+   991	          for (let j = i + 4; j < i + 200 && j < bytes.length - 8; j++) {
+   992	            if (bytes[j] === 0x44 && bytes[j+1] === 0x89) {
+   993	              foundDuration = true;
+   994	              const length = bytes[j+2];
+   995	              if (length === 8) {
+   996	                const view = new DataView(buffer, j + 3, 8);
+   997	                view.setFloat64(0, durationMs, false);
+   998	                return new Blob([buffer], { type: blob.type });
+   999	              } else if (length === 4) {
+  1000	                const view = new DataView(buffer, j + 3, 4);
+  1001	                view.setFloat32(0, durationMs, false);
+  1002	                return new Blob([buffer], { type: blob.type });
+  1003	              }
+  1004	            }
+  1005	          }
+  1006	
+  1007	          // If Duration tag was missing, inject 0x44 0x89 0x88 [Float64 durationMs] into Segment Info
+  1008	          if (!foundDuration && i + 8 < bytes.length) {
+  1009	            const insertPos = i + 8; // Right inside Segment Info
+  1010	            const durTag = new Uint8Array(11);
+  1011	            durTag[0] = 0x44; // Element ID Duration
+  1012	            durTag[1] = 0x89;
+  1013	            durTag[2] = 0x88; // Length 8 bytes
+  1014	            const view = new DataView(durTag.buffer, 3, 8);
+  1015	            view.setFloat64(0, durationMs, false);
+  1016	
+  1017	            const newBuffer = new Uint8Array(bytes.length + 11);
+  1018	            newBuffer.set(bytes.subarray(0, insertPos), 0);
+  1019	            newBuffer.set(durTag, insertPos);
+  1020	            newBuffer.set(bytes.subarray(insertPos), insertPos + 11);
+  1021	
+  1022	            return new Blob([newBuffer.buffer], { type: blob.type });
+  1023	          }
+  1024	        }
+  1025	      }
+  1026	    } catch (e) {
+  1027	      console.warn("Could not patch EBML duration header:", e);
+  1028	    }
+  1029	    return blob;
+  1030	  };
+  1031	
+  1032	  const recorderStopped = new Promise<Blob>((resolve, reject) => {
+  1033	    recorder.onstop = async () => {
+  1034	      stream.getTracks().forEach((t) => t.stop());
+  1035	      const rawBlob = new Blob(chunks, { type: blobType });
+  1036	      let fixedBlob = await fixWebmDuration(rawBlob, durationSec * 1000);
+  1037	      fixedBlob = await fixMp4Duration(fixedBlob, durationSec);
+  1038	      resolve(fixedBlob);
+  1039	    };
+  1040	    recorder.onerror = (e) => {
+  1041	      stream.getTracks().forEach((t) => t.stop());
+  1042	      reject(e);
+  1043	    };
+  1044	  });
+  1045	
+  1046	  // Start with 200ms timeslice to emit chunks progressively and prevent RAM spikes
+  1047	  recorder.start(200);
+  1048	
+  1049	  // Lockstep frame-by-frame rendering loop paced for 30 FPS (33.3ms per frame)
+  1050	  const frameIntervalMs = 1000 / fps;
+  1051	  for (let frame = 0; frame <= totalFrames; frame++) {
+  1052	    const frameStartTime = performance.now();
+  1053	    if (signal?.aborted) {
+  1054	      if (recorder.state !== "inactive") recorder.stop();
+  1055	      stream.getTracks().forEach((t) => t.stop());
+  1056	      throw new Error("Video rendering cancelled by user");
+  1057	    }
+  1058	
+  1059	    const frac = frame / totalFrames;
+  1060	    const simHour = startHour + frac * totalHours;
+  1061	
+  1062	    try {
+  1063	      renderVideoFrameOnCanvas(ctx, width, height, typhoon, simHour, exportConfig);
+  1064	    } catch (e) {
+  1065	      console.warn(`Frame ${frame} render warning:`, e);
+  1066	    }
+  1067	
+  1068	    // Force frame capture on canvas stream if supported
+  1069	    const track = stream.getVideoTracks()[0] as any;
+  1070	    if (track && typeof track.requestFrame === "function") {
+  1071	      track.requestFrame();
+  1072	    }
+  1073	
+  1074	    const percentage = Math.min(99, Math.round((frame / totalFrames) * 98));
+  1075	    onProgress({
+  1076	      percentage,
+  1077	      currentFrame: frame,
+  1078	      totalFrames,
+  1079	      statusText: `正在逐帧合成 30 FPS MP4 动画视频 (第 ${frame}/${totalFrames} 帧)...`
+  1080	    });
+  1081	
+  1082	    const renderElapsed = performance.now() - frameStartTime;
+  1083	    const delay = Math.max(1, Math.round(frameIntervalMs - renderElapsed));
+  1084	    await new Promise((r) => setTimeout(r, delay));
+  1085	  }
+  1086	
+  1087	  // Hold the final frame for extra buffer ticks so MediaRecorder captures the entire video tail completely
+  1088	  const extraHoldTicks = Math.max(16, Math.floor(fps * 0.8));
+  1089	  for (let hold = 0; hold < extraHoldTicks; hold++) {
+  1090	    if (signal?.aborted) break;
